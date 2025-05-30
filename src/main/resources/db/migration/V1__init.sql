@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS account (
     user_id BIGINT NOT NULL,
     name VARCHAR(50) NOT NULL,
     type VARCHAR(30),
+    current_amount DECIMAL(20,2) NOT NULL,
+    is_deleted TINYINT NOT NULL DEFAULT 0,
     remark TEXT,
     created_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_time DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -21,9 +23,7 @@ CREATE TABLE IF NOT EXISTS user (
 CREATE TABLE IF NOT EXISTS asset_snapshot (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     account_id BIGINT NOT NULL,
-    snapshot_time DATETIME NOT NULL,
     amount DECIMAL(20,2) NOT NULL,
-    remark TEXT,
     created_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (account_id) REFERENCES account(id)
 );

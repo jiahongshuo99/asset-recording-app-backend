@@ -2,6 +2,7 @@ package com.example.assetrecordingapp.model;
 
 import javax.persistence.*;
 import lombok.Data;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -29,4 +30,10 @@ public class Account {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Column(name = "is_deleted", nullable = false)
+    private Integer isDeleted;
+    
+    @Column(name = "current_amount")
+    private BigDecimal currentAmount;
 }

@@ -36,7 +36,7 @@ public class UserService {
     public User createUser(RegisterRequest registerRequest) {
         String lockKey = lockKeyManager.getUserRegisterLockKey(registerRequest.getPhone());
         try {
-            return lockManager.executeWithLock(lockKey, () -> {
+            return lockManager.executeInLock(lockKey, () -> {
                 userRepository.findByPhone(registerRequest.getPhone()).ifPresent(user -> {
                     throw new RuntimeException("用户已存在");
                 });

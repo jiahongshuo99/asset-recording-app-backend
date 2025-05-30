@@ -29,7 +29,7 @@ public class IdGeneratorService {
 
     public Long generateNextId() {
         try {
-            return lockManager.executeWithLock(
+            return lockManager.executeInLock(
                     lockKeyManager.getIdGeneratorLockKey(),
                     () -> {
                         // 1. Try Redis first

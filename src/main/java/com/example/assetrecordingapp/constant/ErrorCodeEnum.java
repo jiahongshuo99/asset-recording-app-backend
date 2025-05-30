@@ -19,6 +19,10 @@ public enum ErrorCodeEnum implements BaseValidator {
 
     AUTH_EXPIRED(4, "授权已过期"),
 
+    LOCK_FAILED(5, "锁失败"),
+
+    ACCOUNT_NUM_REACH_LIMIT(6, "账户数量已达上限"),
+
     ;
 
     private int code;

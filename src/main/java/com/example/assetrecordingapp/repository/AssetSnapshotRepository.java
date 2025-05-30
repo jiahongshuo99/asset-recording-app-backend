@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface AssetSnapshotRepository extends JpaRepository<AssetSnapshot, Long> {
     List<AssetSnapshot> findByAccountIdOrderBySnapshotTimeDesc(Long accountId);
+
+
 }

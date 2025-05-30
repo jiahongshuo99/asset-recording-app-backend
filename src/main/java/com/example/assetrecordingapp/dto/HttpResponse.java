@@ -35,11 +35,4 @@ public class HttpResponse<T> {
         return httpResponse;
     }
 
-    public static HttpResponse<Void> fail(ErrorCodeEnum errorCode, String message) {
-        HttpResponse<Void> httpResponse = new HttpResponse<>();
-        httpResponse.setCode(errorCode.getCode());
-        httpResponse.setMsg(message);
-        httpResponse.setTms(System.currentTimeMillis());
-        return httpResponse;
-    }
 }

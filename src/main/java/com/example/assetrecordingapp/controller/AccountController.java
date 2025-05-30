@@ -1,48 +1,51 @@
 package com.example.assetrecordingapp.controller;
 
+import com.example.assetrecordingapp.annotation.RequireLogin;
 import com.example.assetrecordingapp.dto.HttpResponse;
-import com.example.assetrecordingapp.model.Account;
+import com.example.assetrecordingapp.payload.AccountCreateRequest;
+import com.example.assetrecordingapp.payload.AccountCreateResult;
+import com.example.assetrecordingapp.payload.AccountUpdateRequest;
 import com.example.assetrecordingapp.service.AccountService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import com.example.assetrecordingapp.vo.AccountVO;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Resource;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/accounts")
 public class AccountController {
-    
-    private final AccountService accountService;
-    
-    @Autowired
-    public AccountController(AccountService accountService) {
-        this.accountService = accountService;
-    }
-    
+
+    @Resource
+    private AccountService accountService;
+
     @PostMapping
-    public HttpResponse<Account> createAccount(@RequestBody Account account) {
-        Account createdAccount = accountService.createAccount(account);
-        return HttpResponse.success(createdAccount);
+    @RequireLogin
+    public HttpResponse<AccountCreateResult> createAccount(@RequestBody AccountCreateRequest request) {
+        AccountCreateResult result = accountService.createAccount(request);
+        return HttpResponse.success(result);
     }
-    
+
+    @RequireLogin
     @PutMapping("/{id}")
-    public HttpResponse<Account> updateAccount(
-            @PathVariable Long id, 
-            @RequestBody Account account) {
-        Account updatedAccount = accountService.updateAccount(id, account);
-        return HttpResponse.success(updatedAccount);
+    public HttpResponse<Void> updateAccount(
+            @PathVariable Long id,
+            @RequestBody AccountUpdateRequest request) {
+        accountService.updateAccount(id, request);
+        return HttpResponse.success();
     }
-    
+
+    @RequireLogin
     @DeleteMapping("/{id}")
     public HttpResponse<Void> deleteAccount(@PathVariable Long id) {
         accountService.deleteAccount(id);
         return HttpResponse.success();
     }
-    
-    @GetMapping("/{userId}")
-    public HttpResponse<List<Account>> getAllAccounts(@PathVariable Long userId) {
-        List<Account> accounts = accountService.getAllAccounts(userId);
+
+    @GetMapping()
+    @RequireLogin
+    public HttpResponse<List<AccountVO>> getAllAccounts() {
+        List<AccountVO> accounts = accountService.getAllAccounts();
         return HttpResponse.success(accounts);
     }
 }

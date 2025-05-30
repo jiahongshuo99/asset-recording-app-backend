@@ -1,11 +1,14 @@
 package com.example.assetrecordingapp.service.manager;
 
+import com.example.assetrecordingapp.constant.ErrorCodeEnum;
+import com.example.assetrecordingapp.exception.BizException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.core.script.DefaultRedisScript;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.util.Collections;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -28,15 +31,15 @@ public class DistributedLockManager {
         );
     }
 
-    public <T> T executeWithLock(
+    public <T> T executeInLock(
             String lockKey,
             LockedOperation<T> operation
-    ) throws Exception {
-        String lockValue = Thread.currentThread().getId() + "-" + System.currentTimeMillis();
+    ) {
+        String lockValue = UUID.randomUUID().toString();
 
         try {
             if (!tryLock(lockKey, lockValue, 5L, TimeUnit.SECONDS)) {
-                throw new RuntimeException("Failed to acquire lock");
+                throw new BizException(ErrorCodeEnum.LOCK_FAILED);
             }
             return operation.execute();
         } finally {
@@ -45,6 +48,6 @@ public class DistributedLockManager {
     }
 
     public interface LockedOperation<T> {
-        T execute() throws Exception;
+        T execute();
     }
 }

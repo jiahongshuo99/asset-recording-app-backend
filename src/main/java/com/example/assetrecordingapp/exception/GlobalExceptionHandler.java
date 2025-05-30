@@ -13,12 +13,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BizException.class)
     public HttpResponse<Void> handleBizException(BizException ex) {
         log.warn("业务异常", ex);
-        return HttpResponse.fail(ex.getErrorCode(), ex.getMessage());
+        return HttpResponse.fail(ex.getErrorCode());
     }
 
     @ExceptionHandler(Exception.class)
     public HttpResponse<Void> handleGlobalException(Exception ex) {
         log.error("系统异常", ex);
-        return HttpResponse.fail(ErrorCodeEnum.SYSTEM_ERROR, ex.getMessage());
+        return HttpResponse.fail(ErrorCodeEnum.SYSTEM_ERROR);
     }
 }

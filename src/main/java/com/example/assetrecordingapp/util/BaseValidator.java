@@ -1,6 +1,21 @@
 package com.example.assetrecordingapp.util;
 
+import java.util.Objects;
+
 public interface BaseValidator {
+
+    default void equals(Object a, Object b) {
+        if (!Objects.equals(a, b)) {
+            throw buildException();
+        }
+    }
+
+    default void equals(Object a, Object b, String message) {
+        if (!Objects.equals(a, b)) {
+            throw buildException(message);
+        }
+    }
+
     default void isTrue(boolean expression) {
         if (!expression) {
             throw buildException();
