@@ -1,10 +1,13 @@
 package com.example.assetrecordingapp.service;
 
+import com.example.assetrecordingapp.pojo.AssetTrendData;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
 public interface SummaryService {
     BigDecimal getTotalAssets();
-    List<Map<String, Object>> getAssetTrend(String range);
+    AssetTrendData getAssetTrend(LocalDate startDate, LocalDate endDate);
 }

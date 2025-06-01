@@ -6,12 +6,12 @@ import com.example.assetrecordingapp.context.UserContext;
 import com.example.assetrecordingapp.exception.BizException;
 import com.example.assetrecordingapp.model.Account;
 import com.example.assetrecordingapp.model.AssetSnapshot;
-import com.example.assetrecordingapp.payload.AccountCreateRequest;
-import com.example.assetrecordingapp.payload.AccountCreateResult;
-import com.example.assetrecordingapp.payload.AccountUpdateRequest;
+import com.example.assetrecordingapp.payload.*;
 import com.example.assetrecordingapp.repository.AccountRepository;
 import com.example.assetrecordingapp.repository.AssetSnapshotRepository;
+import com.example.assetrecordingapp.repository.DailyAssetSummaryRepository;
 import com.example.assetrecordingapp.service.AccountService;
+import com.example.assetrecordingapp.service.helper.AccountHelper;
 import com.example.assetrecordingapp.service.manager.DistributedLockManager;
 import com.example.assetrecordingapp.service.manager.LockKeyManager;
 import com.example.assetrecordingapp.vo.AccountVO;
@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -36,6 +37,10 @@ public class AccountServiceImpl implements AccountService {
     private DistributedLockManager distributedLockManager;
     @Resource
     private LockKeyManager lockKeyManager;
+    @Resource
+    private AccountHelper accountHelper;
+    @Resource
+    private DailyAssetSummaryRepository dailyAssetSummaryRepository;
 
     @Override
     @Transactional
@@ -75,6 +80,11 @@ public class AccountServiceImpl implements AccountService {
             snapshot.setAmount(amountValue);
             assetSnapshotRepository.save(snapshot);
 
+            List<Account> accountList = accountRepository.findActiveAccountsByUserId(currentUserId);
+            List<Account> updatedAccountList = accountHelper.replaceOrAddAndGet(accountList, savedAccount);
+            BigDecimal newSummaryAmount = accountHelper.sumAmounts(updatedAccountList);
+            dailyAssetSummaryRepository.upsertDailySummary(currentUserId, LocalDate.now(), newSummaryAmount);
+
             AccountCreateResult result = new AccountCreateResult();
             result.setId(savedAccount.getId());
             return result;
@@ -83,7 +93,7 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     @Transactional
-    public void updateAccount(Long id, AccountUpdateRequest request) {
+    public void updateAccountInfo(Long id, AccountUpdateRequest request) {
         String accountLockKey = lockKeyManager.getAccountLockKey(id);
         distributedLockManager.executeInLock(accountLockKey, () -> {
 
@@ -96,27 +106,11 @@ public class AccountServiceImpl implements AccountService {
 
             ErrorCodeEnum.NO_AUTH.equals(currentUserId, existingAccount, "更新账户信息鉴权失败");
 
-            BigDecimal newAmount;
-            try {
-                newAmount = new BigDecimal(request.getAmount());
-            } catch (Exception e) {
-                log.error("[updateAccount] Invalid amount value: {}", request.getAmount());
-                throw new BizException(ErrorCodeEnum.PARAM_ERROR);
-            }
 
             // Update account fields
             existingAccount.setName(request.getName());
             existingAccount.setType(request.getType());
             existingAccount.setRemark(request.getRemark());
-            existingAccount.setCurrentAmount(newAmount);
-
-            // Create new snapshot if amount changed
-            if (existingAccount.getCurrentAmount().compareTo(newAmount) != 0) {
-                AssetSnapshot snapshot = new AssetSnapshot();
-                snapshot.setAccountId(existingAccount.getId());
-                snapshot.setAmount(newAmount);
-                assetSnapshotRepository.save(snapshot);
-            }
 
             accountRepository.save(existingAccount);
             return null;
@@ -142,6 +136,13 @@ public class AccountServiceImpl implements AccountService {
 
             existingAccount.setIsDeleted(0);
             accountRepository.save(existingAccount);
+
+
+            List<Account> accountList = accountRepository.findActiveAccountsByUserId(currentUserId);
+            List<Account> updatedAccountList = accountHelper.removeAccount(accountList, id);
+            BigDecimal newSummaryAmount = accountHelper.sumAmounts(updatedAccountList);
+            dailyAssetSummaryRepository.upsertDailySummary(currentUserId, LocalDate.now(), newSummaryAmount);
+
             return null;
         });
     }
@@ -168,5 +169,47 @@ public class AccountServiceImpl implements AccountService {
                     return vo;
                 })
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public AccountAmountUpdateResult updateAccountAmount(AccountAmountUpdateRequest request) {
+        // 获取当前用户ID
+        Long currentUserId = UserContext.getCurrentUserId();
+        ErrorCodeEnum.SYSTEM_ERROR.isNotNull(currentUserId, "用户信息缺失");
+
+        // 验证金额格式
+        BigDecimal amount;
+        try {
+            amount = new BigDecimal(request.getAmount());
+        } catch (Exception e) {
+            log.error("[createSnapshot] Invalid amount value: {}", request.getAmount());
+            throw new BizException(ErrorCodeEnum.PARAM_ERROR);
+        }
+
+        // 检查账户存在性和权限
+        Account account = accountRepository.findByIdAndNotDeleted(request.getAccountId())
+                .orElseThrow(() -> new BizException(ErrorCodeEnum.PARAM_ERROR, "账户不存在"));
+
+        ErrorCodeEnum.NO_AUTH.equals(currentUserId, account.getUserId(), "无权操作该账户");
+
+        // 更新account表的current_amount
+        account.setCurrentAmount(amount);
+        accountRepository.save(account);
+
+        // 创建新的快照记录
+        AssetSnapshot snapshot = new AssetSnapshot();
+        snapshot.setAccountId(request.getAccountId());
+        snapshot.setAmount(amount);
+
+        AssetSnapshot savedSnapshot = assetSnapshotRepository.save(snapshot);
+
+        List<Account> accountList = accountRepository.findActiveAccountsByUserId(currentUserId);
+        List<Account> updatedAccountList = accountHelper.replaceOrAddAndGet(accountList, account);
+        BigDecimal newSummaryAmount = accountHelper.sumAmounts(updatedAccountList);
+        dailyAssetSummaryRepository.upsertDailySummary(currentUserId, LocalDate.now(), newSummaryAmount);
+
+        AccountAmountUpdateResult result = new AccountAmountUpdateResult();
+        result.setId(savedSnapshot.getId());
+        return result;
     }
 }

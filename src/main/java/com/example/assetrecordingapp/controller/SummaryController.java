@@ -1,12 +1,15 @@
 package com.example.assetrecordingapp.controller;
 
+import com.example.assetrecordingapp.annotation.RequireLogin;
 import com.example.assetrecordingapp.dto.HttpResponse;
+import com.example.assetrecordingapp.pojo.AssetTrendData;
 import com.example.assetrecordingapp.service.SummaryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +24,7 @@ public class SummaryController {
         this.summaryService = summaryService;
     }
 
+    @RequireLogin
     @GetMapping("/total")
     public HttpResponse<BigDecimal> getTotalAssets() {
         BigDecimal total = summaryService.getTotalAssets();
@@ -28,9 +32,10 @@ public class SummaryController {
     }
 
     @GetMapping("/trend")
-    public HttpResponse<List<Map<String, Object>>> getAssetTrend(
-            @RequestParam(defaultValue = "30d") String range) {
-        List<Map<String, Object>> trendData = summaryService.getAssetTrend(range);
+    public HttpResponse<AssetTrendData> getAssetTrend(
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate) {
+        AssetTrendData trendData = summaryService.getAssetTrend(startDate, endDate);
         return HttpResponse.success(trendData);
     }
 }

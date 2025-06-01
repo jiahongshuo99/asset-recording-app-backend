@@ -2,9 +2,7 @@ package com.example.assetrecordingapp.controller;
 
 import com.example.assetrecordingapp.annotation.RequireLogin;
 import com.example.assetrecordingapp.dto.HttpResponse;
-import com.example.assetrecordingapp.payload.AccountCreateRequest;
-import com.example.assetrecordingapp.payload.AccountCreateResult;
-import com.example.assetrecordingapp.payload.AccountUpdateRequest;
+import com.example.assetrecordingapp.payload.*;
 import com.example.assetrecordingapp.service.AccountService;
 import com.example.assetrecordingapp.vo.AccountVO;
 import org.springframework.web.bind.annotation.*;
@@ -19,7 +17,7 @@ public class AccountController {
     @Resource
     private AccountService accountService;
 
-    @PostMapping
+    @PostMapping("/create")
     @RequireLogin
     public HttpResponse<AccountCreateResult> createAccount(@RequestBody AccountCreateRequest request) {
         AccountCreateResult result = accountService.createAccount(request);
@@ -27,11 +25,11 @@ public class AccountController {
     }
 
     @RequireLogin
-    @PutMapping("/{id}")
-    public HttpResponse<Void> updateAccount(
+    @PostMapping("/update-info/{id}")
+    public HttpResponse<Void> updateAccountInfo(
             @PathVariable Long id,
             @RequestBody AccountUpdateRequest request) {
-        accountService.updateAccount(id, request);
+        accountService.updateAccountInfo(id, request);
         return HttpResponse.success();
     }
 
@@ -47,5 +45,12 @@ public class AccountController {
     public HttpResponse<List<AccountVO>> getAllAccounts() {
         List<AccountVO> accounts = accountService.getAllAccounts();
         return HttpResponse.success(accounts);
+    }
+
+    @RequireLogin
+    @PostMapping("/update-amount")
+    public HttpResponse<AccountAmountUpdateResult> updateAccountAmount(@RequestBody AccountAmountUpdateRequest request) {
+        AccountAmountUpdateResult result = accountService.updateAccountAmount(request);
+        return HttpResponse.success(result);
     }
 }

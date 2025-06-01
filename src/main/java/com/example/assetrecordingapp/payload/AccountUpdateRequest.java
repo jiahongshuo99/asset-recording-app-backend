@@ -7,5 +7,4 @@ public class AccountUpdateRequest {
     private String name;
     private String type;
     private String remark;
-    private String amount;
 }
